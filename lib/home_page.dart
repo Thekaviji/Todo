@@ -15,6 +15,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
+  final editedTitleController = TextEditingController();
+  final editedDescriptionController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -63,15 +65,28 @@ class _HomePageState extends State<HomePage> {
                                     ],
                                   ),
                                 ),
-                                IconButton(
-                                  onPressed: () {
-                                    _deleteTodoItem(index);
-                                  },
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                ),
+                                Column(
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        _deleteTodoItem(index);
+                                      },
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        _editTodoItem(index, data[index]);
+                                      },
+                                      icon: const Icon(
+                                        Icons.edit,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                )
                               ],
                             ),
                           ),
@@ -149,7 +164,6 @@ class _HomePageState extends State<HomePage> {
                 );
                 final box = Boxes.getData();
                 box.add(data);
-                data.save();
 
                 titleController.clear();
                 descriptionController.clear();
@@ -166,5 +180,81 @@ class _HomePageState extends State<HomePage> {
   void _deleteTodoItem(int index) {
     final box = Boxes.getData();
     box.deleteAt(index);
+  }
+
+  Future<void> _editTodoItem(int index, TodoModel todo) async {
+    // Populate the text fields with the current data
+    editedTitleController.text = todo.title;
+    editedDescriptionController.text = todo.description;
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Center(
+            child: Text(
+              'Edit Todo',
+              style: TextStyle(
+                fontSize: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: [
+                TextField(
+                  controller: editedTitleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: editedDescriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (editedTitleController.text.isEmpty ||
+                    editedDescriptionController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Title and Description cannot be empty'),
+                    ),
+                  );
+                  return;
+                }
+
+                // Update the item in the Hive box
+                todo.title = editedTitleController.text;
+                todo.description = editedDescriptionController.text;
+                todo.save();
+
+                editedTitleController.clear();
+                editedDescriptionController.clear();
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
