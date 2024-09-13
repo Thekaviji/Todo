@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:todo/models/todo_model.dart';
-
 import 'boxes/boxes.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
+  const HomePage({
+    super.key,
+    required this.title,
+    required this.isDarkMode,
+    required this.toggleTheme,
+  });
+
   final String title;
+  final bool isDarkMode;
+  final Function(bool) toggleTheme;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -29,71 +36,81 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              widget.toggleTheme(!widget.isDarkMode);
+            },
+            icon: widget.isDarkMode
+                ? const Icon(Icons.nightlight)  // Icon for dark mode
+                : const Icon(Icons.wb_sunny),   // Icon for light mode
+          )
+
+        ],
       ),
       body: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: ValueListenableBuilder<Box<TodoModel>>(
-              valueListenable: Boxes.getData().listenable(),
-              builder: (context, box, _) {
-                var data = box.values.toList().cast<TodoModel>();
-                return ListView.builder(
-                    itemCount: box.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 5.0),
-                        child: Card(
-                          color: Colors.white10,
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Row(
+        padding: const EdgeInsets.all(10.0),
+        child: ValueListenableBuilder<Box<TodoModel>>(
+          valueListenable: Boxes.getData().listenable(),
+          builder: (context, box, _) {
+            var data = box.values.toList().cast<TodoModel>();
+            return ListView.builder(
+              itemCount: box.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 5.0),
+                  child: Card(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    child: Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        data[index].title.toString(),
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16),
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Text(
-                                        data[index].description.toString(),
-                                      ),
-                                    ],
-                                  ),
+                                Text(
+                                  data[index].title.toString(),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
-                                Column(
-                                  children: [
-                                    IconButton(
-                                      onPressed: () {
-                                        _deleteTodoItem(index);
-                                      },
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      onPressed: () {
-                                        _editTodoItem(index, data[index]);
-                                      },
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                )
+                                const SizedBox(height: 5),
+                                Text(data[index].description.toString()),
                               ],
                             ),
                           ),
-                        ),
-                      );
-                    });
-              })),
+                          Column(
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  _deleteTodoItem(index);
+                                },
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  _editTodoItem(index, data[index]);
+                                },
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showMyDialog();
@@ -183,7 +200,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _editTodoItem(int index, TodoModel todo) async {
-    // Populate the text fields with the current data
     editedTitleController.text = todo.title;
     editedDescriptionController.text = todo.description;
 
@@ -241,7 +257,6 @@ class _HomePageState extends State<HomePage> {
                   return;
                 }
 
-                // Update the item in the Hive box
                 todo.title = editedTitleController.text;
                 todo.description = editedDescriptionController.text;
                 todo.save();
